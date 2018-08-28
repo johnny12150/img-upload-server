@@ -27,7 +27,7 @@
 //     childProcess.spawn = mySpawn;
 // })();
 
-var request = require('request');
+let url = require('url');
 var fetch = require('node-fetch');
 
 (function (port) {
@@ -39,7 +39,6 @@ var fetch = require('node-fetch');
         formidable = require('formidable'),
         nodeStatic = require('node-static'),
         imageMagick = require('imagemagick'),
-        // todo: 根據URI參數 dataset, 決定參數的資料夾, 並判斷是否創新的資料夾
         options = {
             // tmpDir: __dirname + '/tmp',
             // publicDir: __dirname + '/public',
@@ -106,6 +105,18 @@ var fetch = require('node-fetch');
             //     'Access-Control-Allow-Origin',
             //     options.accessControl.allowOrigin
             // );
+
+            // 處理路由 & query
+            const parsedUrl = url.parse(req.url, true);
+            const path = parsedUrl.pathname, query = parsedUrl.query;
+            // console.log(path, query);
+
+            // todo: 根據URI參數 dataset設定options, 決定參數的資料夾, 並判斷是否創新的資料夾
+            options.publicDir = '/var/www/html/media/1';
+            options.tmpDir = '/var/www/html/media/1/tmp';
+            options.uploadDir = '/var/www/html/media/1';
+            // options.uploadUrl ='/';
+
             res.setHeader(
                 'Access-Control-Allow-Methods',
                 options.accessControl.allowMethods
@@ -125,6 +136,8 @@ var fetch = require('node-fetch');
                         });
                         res.end();
                     } else {
+                        // 處理回傳get時，server上所有照片
+                        console.log('get response');
                         res.writeHead(200, {
                             'Content-Type': req.headers.accept
                                 .indexOf('application/json') !== -1 ?
@@ -147,15 +160,16 @@ var fetch = require('node-fetch');
                     break;
                 case 'HEAD':
                 case 'GET':
-                    if (req.url === '/') {
+                    // if (req.url === '/') {
+                    if (path === '/') {
                         setNoCacheHeaders();
                         if (req.method === 'GET') {
-
                             handler.get();
                         } else {
                             res.end();
                         }
-                    } else {
+                    } //把路由導向至圖片實體位置
+                    else {
                         fileServer.serve(req, res);
                     }
                     break;
@@ -228,20 +242,20 @@ var fetch = require('node-fetch');
     UploadHandler.prototype.get = function () {
         var handler = this,
             files = [];
+        console.log(options.uploadDir);
         fs.readdir(options.uploadDir, function (err, list) {
             // 列出server上所有的檔案
             list.forEach(function (name, index) {
                 console.log(name);
-                // fixme: 限制範圍會導致讀到檔案目錄時,浪費index位置,之後直接被跳else
+                // 限制範圍會導致讀到檔案目錄時,浪費index位置,之後直接被跳else
                 // if (index <= list.length - 4) {
                 if (index <= list.length) {
                     var stats = fs.statSync(options.uploadDir + '/' + name),
                         fileInfo;
                     let manifest_pic_name;
-                    console.log(stats.isFile());
                     if (stats.isFile() && name[0] !== '.') {
+                        // 切掉檔案類型
                         manifest_pic_name = name.split('.')[0];
-                        console.log(manifest_pic_name);
                         // fetch to find mId
                         // @ref: https://stackoverflow.com/questions/24912226/how-to-make-ajax-request-through-nodejs-to-an-endpoint
                         let manifest_API = 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/manifest/check/' + manifest_pic_name;
@@ -252,9 +266,6 @@ var fetch = require('node-fetch');
                             .then(res => res.text())
                             .then(text => {
                                 // text is mId
-                                console.log('fetch mId');
-                                console.log(text);
-
                                 fileInfo = new FileInfo({
                                     name: name,
                                     size: stats.size,
@@ -263,7 +274,10 @@ var fetch = require('node-fetch');
                                 fileInfo.initUrls(handler.req);
                                 files.push(fileInfo);
                                 // 確保每張照片都被執行過check manifest
-                                if (files.length === list.length - 3) {
+                                // fixme: 減幾的參數會根據資料夾數目變動
+                                // EX: 根目錄在media時減4, 因為有4個資料夾
+                                //     根木料在 1時減2, 因為底下只有兩個資料夾
+                                if (files.length === list.length - 2) {
                                     handler.callback({files: files});
                                 }
                             })
