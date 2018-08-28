@@ -109,15 +109,17 @@ var fetch = require('node-fetch');
             // 處理路由 & query
             const parsedUrl = url.parse(req.url, true);
             const path = parsedUrl.pathname, query = parsedUrl.query;
-            // console.log(path, query);
+            console.log(path, query);
 
             // todo: 判斷是否創新的資料夾
 
             // 根據URI參數 dataset設定options, 決定參數的資料夾
-            options.publicDir = '/var/www/html/media/' + query.dataset;
-            options.tmpDir = '/var/www/html/media/' + query.dataset + '/tmp';
-            options.uploadDir = '/var/www/html/media/' + query.dataset;
-            // options.uploadUrl ='/';
+            if (query.length <= 0) {
+                options.publicDir = '/var/www/html/media/' + query.dataset;
+                options.tmpDir = '/var/www/html/media/' + query.dataset + '/tmp';
+                options.uploadDir = '/var/www/html/media/' + query.dataset;
+                // options.uploadUrl ='/';
+            }
 
             res.setHeader(
                 'Access-Control-Allow-Methods',
@@ -244,8 +246,19 @@ var fetch = require('node-fetch');
     UploadHandler.prototype.get = function () {
         var handler = this,
             files = [];
-        console.log(options.uploadDir);
+        let count_directory = 0;
         fs.readdir(options.uploadDir, function (err, list) {
+            // 計算資料夾數
+            list.forEach(function (name, index) {
+                if (index <= list.length) {
+                    let stats = fs.statSync(options.uploadDir + '/' + name);
+                    if (stats.isDirectory()) {
+                        console.log('is directory');
+                        console.log(count_directory);
+                        count_directory++;
+                    }
+                }
+            });
             // 列出server上所有的檔案
             list.forEach(function (name, index) {
                 // 限制範圍會導致讀到檔案目錄時,浪費index位置,之後直接被跳else
@@ -276,60 +289,19 @@ var fetch = require('node-fetch');
                                 files.push(fileInfo);
                                 // 確保每張照片都被執行過check manifest
                                 // fixme: 減幾的參數會根據資料夾數目變動
-                                // EX: 根目錄在media時減4, 因為有4個資料夾
-                                //     根木料在 1時減2, 因為底下只有兩個資料夾tmp & thumbnail
-                                if (files.length === list.length - 2) {
+                                // EX: 根目錄在media時減4, 因為有4個資料夾 (之後會有新資料夾,需動態)
+                                //     根目錄在 1時減2, 因為底下只有兩個資料夾tmp & thumbnail
+                                console.log(count_directory);
+                                let directory_num;
+                                if (options.uploadDir === '/var/www/html/media')
+                                    directory_num = count_directory;
+                                else
+                                    directory_num = 2;
+                                if (files.length === list.length - directory_num) {
                                     // 呼叫callback回傳所有file的資訊
                                     handler.callback({files: files});
                                 }
                             })
-
-                        // let creating_manifest = function (callback) {
-                        //     // request.get(manifest_API, {json: true, body: input}, function (err, res, body) {
-                        //     request.get(manifest_API, function (err, res, body) {
-                        //         if (!err && res.statusCode === 200 || res.statusCode === 304) {
-                        //             // console.log(res);
-                        //             // body內是manifest API回傳內容
-                        //
-                        //             // 有時候最後一個的這行還沒執行就被跳res
-                        //             console.log(body);
-                        //             callback(body);
-                        //         }
-                        //     });
-                        // };
-
-                        // creating_manifest(function (mId) {
-                        //
-                        //     if (index == list.length - 4) {
-                        //
-                        //         console.log('first');
-                        //         fileInfo = new FileInfo({
-                        //             name: name,
-                        //             size: stats.size,
-                        //             manifest: 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/' + mId + '/manifest'
-                        //         });
-                        //         fileInfo.initUrls(handler.req);
-                        //         files.push(fileInfo);
-                        //         counter++;
-                        //
-                        //         if (counter === list.length - 4) {
-                        //             // 太早執行
-                        //             console.log('last');
-                        //             console.log(files);
-                        //             handler.callback({files: files});
-                        //         }
-                        //     } else {
-                        //         console.log('first');
-                        //         fileInfo = new FileInfo({
-                        //             name: name,
-                        //             size: stats.size,
-                        //             manifest: 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/' + mId + '/manifest'
-                        //         });
-                        //         fileInfo.initUrls(handler.req);
-                        //         files.push(fileInfo);
-                        //     }
-                        //
-                        // });
                     }
                 } else {
                     // todo: 檢查array把資料夾 public thumbnail 以及 tmp從list 去除
@@ -338,7 +310,6 @@ var fetch = require('node-fetch');
             });
             // console.log(files);
             // handler.callback({files: files});
-
         });
     };
     // 處理傳過來的檔案(post)
