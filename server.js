@@ -288,16 +288,9 @@ var fetch = require('node-fetch');
                                 fileInfo.initUrls(handler.req);
                                 files.push(fileInfo);
                                 // 確保每張照片都被執行過check manifest
-                                // fixme: 減幾的參數會根據資料夾數目變動
                                 // EX: 根目錄在media時減4, 因為有4個資料夾 (之後會有新資料夾,需動態)
                                 //     根目錄在 1時減2, 因為底下只有兩個資料夾tmp & thumbnail
-                                console.log(count_directory);
-                                let directory_num;
-                                if (options.uploadDir === '/var/www/html/media')
-                                    directory_num = count_directory;
-                                else
-                                    directory_num = 2;
-                                if (files.length === list.length - directory_num) {
+                                if (files.length === list.length - count_directory) {
                                     // 呼叫callback回傳所有file的資訊
                                     handler.callback({files: files});
                                 }
