@@ -111,10 +111,12 @@ var fetch = require('node-fetch');
             const path = parsedUrl.pathname, query = parsedUrl.query;
             // console.log(path, query);
 
-            // todo: 根據URI參數 dataset設定options, 決定參數的資料夾, 並判斷是否創新的資料夾
-            options.publicDir = '/var/www/html/media/1';
-            options.tmpDir = '/var/www/html/media/1/tmp';
-            options.uploadDir = '/var/www/html/media/1';
+            // todo: 判斷是否創新的資料夾
+
+            // 根據URI參數 dataset設定options, 決定參數的資料夾
+            options.publicDir = '/var/www/html/media/' + query.dataset;
+            options.tmpDir = '/var/www/html/media/' + query.dataset + '/tmp';
+            options.uploadDir = '/var/www/html/media/' + query.dataset;
             // options.uploadUrl ='/';
 
             res.setHeader(
@@ -246,7 +248,6 @@ var fetch = require('node-fetch');
         fs.readdir(options.uploadDir, function (err, list) {
             // 列出server上所有的檔案
             list.forEach(function (name, index) {
-                console.log(name);
                 // 限制範圍會導致讀到檔案目錄時,浪費index位置,之後直接被跳else
                 // if (index <= list.length - 4) {
                 if (index <= list.length) {
@@ -276,8 +277,9 @@ var fetch = require('node-fetch');
                                 // 確保每張照片都被執行過check manifest
                                 // fixme: 減幾的參數會根據資料夾數目變動
                                 // EX: 根目錄在media時減4, 因為有4個資料夾
-                                //     根木料在 1時減2, 因為底下只有兩個資料夾
+                                //     根木料在 1時減2, 因為底下只有兩個資料夾tmp & thumbnail
                                 if (files.length === list.length - 2) {
+                                    // 呼叫callback回傳所有file的資訊
                                     handler.callback({files: files});
                                 }
                             })
