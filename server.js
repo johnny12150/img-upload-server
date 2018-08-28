@@ -248,17 +248,6 @@ var fetch = require('node-fetch');
             files = [];
         let count_directory = 0;
         fs.readdir(options.uploadDir, function (err, list) {
-            // 計算資料夾數
-            list.forEach(function (name, index) {
-                if (index <= list.length) {
-                    let stats = fs.statSync(options.uploadDir + '/' + name);
-                    if (stats.isDirectory()) {
-                        console.log('is directory');
-                        console.log(count_directory);
-                        count_directory++;
-                    }
-                }
-            });
             // 列出server上所有的檔案
             list.forEach(function (name, index) {
                 // 限制範圍會導致讀到檔案目錄時,浪費index位置,之後直接被跳else
@@ -266,6 +255,9 @@ var fetch = require('node-fetch');
                 if (index <= list.length) {
                     var stats = fs.statSync(options.uploadDir + '/' + name),
                         fileInfo;
+                    // 計算資料夾數
+                    if (stats.isDirectory())
+                        count_directory++;
                     let manifest_pic_name;
                     if (stats.isFile() && name[0] !== '.') {
                         // 切掉檔案類型
