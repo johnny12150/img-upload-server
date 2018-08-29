@@ -114,7 +114,7 @@ var fetch = require('node-fetch');
             // todo: 判斷是否創新的資料夾
 
             // 根據URI參數 dataset設定options, 決定參數的資料夾
-            if (query.length <= 0) {
+            if (query.dataset) {
                 options.publicDir = '/var/www/html/media/' + query.dataset;
                 options.tmpDir = '/var/www/html/media/' + query.dataset + '/tmp';
                 options.uploadDir = '/var/www/html/media/' + query.dataset;
@@ -262,6 +262,7 @@ var fetch = require('node-fetch');
                     if (stats.isFile() && name[0] !== '.') {
                         // 切掉檔案類型
                         manifest_pic_name = name.split('.')[0];
+                        // todo: API 可能要新增dataset的管理, 或是將dataset參數帶回上傳介面
                         // fetch to find mId
                         // @ref: https://stackoverflow.com/questions/24912226/how-to-make-ajax-request-through-nodejs-to-an-endpoint
                         let manifest_API = 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/manifest/check/' + manifest_pic_name;
@@ -275,6 +276,7 @@ var fetch = require('node-fetch');
                                 fileInfo = new FileInfo({
                                     name: name,
                                     size: stats.size,
+                                    // todo: 回傳到介面時,給dataset query
                                     manifest: 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/' + text + '/manifest'
                                 });
                                 fileInfo.initUrls(handler.req);
@@ -289,7 +291,6 @@ var fetch = require('node-fetch');
                             })
                     }
                 } else {
-                    // todo: 檢查array把資料夾 public thumbnail 以及 tmp從list 去除
                     // console.log('else');
                 }
             });
