@@ -117,6 +117,11 @@ var fetch = require('node-fetch');
                 options.uploadDir = '/var/www/html/media/' + query.dataset;
                 // options.uploadUrl ='/';
                 options.dataset = query.dataset;
+            } else {
+                options.publicDir = '/var/www/html/media';
+                options.uploadDir = '/var/www/html/media';
+                options.tmpDir = '/var/www/html/media/tmp';
+                options.dataset = null;
             }
 
             res.setHeader(
