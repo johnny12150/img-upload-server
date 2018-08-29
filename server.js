@@ -109,9 +109,6 @@ var fetch = require('node-fetch');
             // 處理路由 & query
             const parsedUrl = url.parse(req.url, true);
             const path = parsedUrl.pathname, query = parsedUrl.query;
-            console.log(path, query);
-
-            // todo: 判斷是否創新的資料夾
 
             // 根據URI參數 dataset設定options, 決定參數的資料夾
             if (query.dataset) {
@@ -119,6 +116,7 @@ var fetch = require('node-fetch');
                 options.tmpDir = '/var/www/html/media/' + query.dataset + '/tmp';
                 options.uploadDir = '/var/www/html/media/' + query.dataset;
                 // options.uploadUrl ='/';
+                options.dataset = query.dataset;
             }
 
             res.setHeader(
@@ -273,12 +271,20 @@ var fetch = require('node-fetch');
                             .then(res => res.text())
                             .then(text => {
                                 // text is mId
-                                fileInfo = new FileInfo({
-                                    name: name,
-                                    size: stats.size,
-                                    // todo: 回傳到介面時,給dataset query
-                                    manifest: 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/' + text + '/manifest'
-                                });
+                                if (options.dataset) {
+                                    fileInfo = new FileInfo({
+                                        name: name,
+                                        size: stats.size,
+                                        // 回傳到介面時,給dataset query
+                                        manifest: 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/' + text + '/manifest' + '&dataset=' + options.dataset
+                                    });
+                                } else {
+                                    fileInfo = new FileInfo({
+                                        name: name,
+                                        size: stats.size,
+                                        manifest: 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/' + text + '/manifest'
+                                    });
+                                }
                                 fileInfo.initUrls(handler.req);
                                 files.push(fileInfo);
                                 // 確保每張照片都被執行過check manifest
