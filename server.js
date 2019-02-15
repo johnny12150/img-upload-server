@@ -214,6 +214,7 @@ var fetch = require('node-fetch');
         }
         return !this.error;
     };
+    // todo: 根據project & user重新 rename img
     FileInfo.prototype.safeName = function () {
         // Prevent directory traversal and creating hidden system files:
         this.name = path.basename(this.name).replace(/^\.+/, '');
@@ -445,7 +446,8 @@ var fetch = require('node-fetch');
             // @ref: https://github.com/mscdex/ssh2/issues/265
             // return sftp.list('/var/lib/rancher/volumes/rancher-nfs/Horovod_Node_data/joffrey/yolo');
             // 不支援目錄傳目錄, local & remote雙方都需檔案名稱
-            return sftp.put('/var/www/html/media/' + pic_name, '/var/lib/rancher/volumes/rancher-nfs/Horovod_Node_data/joffrey/yolo/media/' + pic_name);
+            // todo: 創dataset的API 也要在remote training server上新增對應資料夾 
+            return sftp.put(options.uploadDir + '/' + pic_name, '/var/lib/rancher/volumes/rancher-nfs/Horovod_Node_data/joffrey/yolo/media/' + pic_name);
         }).then((data) => {
             // console.log(data, 'the data info');
             console.log('sftp to remote');
