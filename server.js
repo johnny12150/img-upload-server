@@ -32,6 +32,7 @@ var fetch = require('node-fetch');
 
 (function (port) {
     'use strict';
+    var apiDomain = 'http://192.168.1.32:31379/';
     var path = require('path'),
         fs = require('fs'),
         // Since Node 0.8, .existsSync() moved from path to fs:
@@ -269,7 +270,7 @@ var fetch = require('node-fetch');
                         // todo: API 可能要新增dataset的管理, 或是將dataset參數帶回上傳介面
                         // fetch to find mId
                         // @ref: https://stackoverflow.com/questions/24912226/how-to-make-ajax-request-through-nodejs-to-an-endpoint
-                        let manifest_API = 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/manifest/check/' + manifest_pic_name;
+                        let manifest_API = apiDomain + 'api/GET/manifest/check/' + manifest_pic_name;
                         fetch(manifest_API, {
                             method: 'GET',
                             headers: {'Content-Type': 'application/json'},
@@ -282,19 +283,19 @@ var fetch = require('node-fetch');
                                         name: name,
                                         size: stats.size,
                                         // 回傳到介面時,給dataset query
-                                        manifest: 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/' + text + '/manifest' + '&dataset=' + options.dataset
+                                        manifest: apiDomain + 'api/GET/' + text + '/manifest' + '&dataset=' + options.dataset
                                     });
                                 } else {
                                     fileInfo = new FileInfo({
                                         name: name,
                                         size: stats.size,
-                                        manifest: 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/' + text + '/manifest'
+                                        manifest: apiDomain + 'api/GET/' + text + '/manifest'
                                     });
                                 }
                                 fileInfo.initUrls(handler.req);
                                 files.push(fileInfo);
                                 // 確保每張照片都被執行過check manifest
-                                // EX: 根目錄在media時減4, 因為有4個資料夾 (之後會有新資料夾,需動態)
+                                // EX: 根目錄在media時減4, 因為有4個資料夾 (會動態計算資料夾數目)
                                 //     根目錄在 1時減2, 因為底下只有兩個資料夾tmp & thumbnail
                                 if (files.length === list.length - count_directory) {
                                     // 呼叫callback回傳所有file的資訊
@@ -345,7 +346,7 @@ var fetch = require('node-fetch');
 
             let manifest_pic_name = file.name.split('.')[0];
             // fetch to find mId
-            let manifest_API = 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/manifest/check/' + manifest_pic_name;
+            let manifest_API = apiDomain + 'api/GET/manifest/check/' + manifest_pic_name;
             fetch(manifest_API, {
                 method: 'GET',
                 headers: {'Content-Type': 'application/json'},
@@ -355,16 +356,7 @@ var fetch = require('node-fetch');
                     // text is mId
                     // console.log('fetch mId');
 
-                    // 這裡太慢會拖累下面
-                    // var fileInfo = new FileInfo({
-                    //     name: file.name,
-                    //     size: file.size,
-                    //     type: file.type,
-                    //     manifest: 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/' + text + '/manifest'
-                    //     // manifest: 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/1/manifest'
-                    // }, handler.req, true);
-
-                    fileInfo.manifest = 'http://apis.yolo.dev.annotation.taieol.tw/api/GET/' + text + '/manifest';
+                    fileInfo.manifest = apiDomain + 'api/GET/' + text + '/manifest';
                     // console.log(fileInfo);
 
                     // fileInfo.safeName();
@@ -432,29 +424,29 @@ var fetch = require('node-fetch');
             }
         }).on('end', finish).parse(handler.req);
 
+        // todo: 改ftp
         // pass img to remote host thru ssh(sftp)
-        let Client = require('ssh2-sftp-client');
-        let sftp = new Client();
-
-        sftp.connect({
-            host: '172.16.10.69',
-            port: '22',
-            username: 'root',
-            password: 'qwe123!@#'
-        }).then(() => {
-            // @ref: https://github.com/jyu213/ssh2-sftp-client/blob/master/example/demo.js
-            // @ref: https://github.com/mscdex/ssh2/issues/265
-            // return sftp.list('/var/lib/rancher/volumes/rancher-nfs/Horovod_Node_data/joffrey/yolo');
-            // 不支援目錄傳目錄, local & remote雙方都需檔案名稱
-            // todo: 創dataset的API 也要在remote training server上新增對應資料夾 
-            return sftp.put(options.uploadDir + '/' + pic_name, '/var/lib/rancher/volumes/rancher-nfs/Horovod_Node_data/joffrey/yolo/media/' + pic_name);
-        }).then((data) => {
-            // console.log(data, 'the data info');
-            console.log('sftp to remote');
-        })
-            .catch((err) => {
-                console.log(err, 'catch error');
-            });
+        // let Client = require('ssh2-sftp-client');
+        // let sftp = new Client();
+        //
+        // sftp.connect({
+        //     host: '172.16.10.69',
+        //     port: '22',
+        //     username: 'root',
+        //     password: 'qwe123!@#'
+        // }).then(() => {
+        //     // @ref: https://github.com/jyu213/ssh2-sftp-client/blob/master/example/demo.js
+        //     // @ref: https://github.com/mscdex/ssh2/issues/265
+        //     // return sftp.list('/var/lib/rancher/volumes/rancher-nfs/Horovod_Node_data/joffrey/yolo');
+        //     // 不支援目錄傳目錄, local & remote雙方都需檔案名稱
+        //     return sftp.put(options.uploadDir + '/' + pic_name, '/var/lib/rancher/volumes/rancher-nfs/Horovod_Node_data/joffrey/yolo/media/' + pic_name);
+        // }).then((data) => {
+        //     // console.log(data, 'the data info');
+        //     console.log('sftp to remote');
+        // })
+        //     .catch((err) => {
+        //         console.log(err, 'catch error');
+        //     });
 
     };
     UploadHandler.prototype.destroy = function () {
