@@ -101,11 +101,11 @@ var fetch = require('node-fetch');
             this.callback = callback;
         },
         serve = function (req, res) {
-            // 這個http://img-server.yolo.dev.annotation.taieol.tw 已經有設定過CORS
-            // res.setHeader(
-            //     'Access-Control-Allow-Origin',
-            //     options.accessControl.allowOrigin
-            // );
+            // 已經有設定過CORS的domain則將下列註解
+            res.setHeader(
+                'Access-Control-Allow-Origin',
+                options.accessControl.allowOrigin
+            );
 
             // 處理路由 & query
             const parsedUrl = url.parse(req.url, true);
@@ -256,7 +256,6 @@ var fetch = require('node-fetch');
             // 列出server上所有的檔案
             list.forEach(function (name, index) {
                 // 限制範圍會導致讀到檔案目錄時,浪費index位置,之後直接被跳else
-                // if (index <= list.length - 4) {
                 if (index <= list.length) {
                     var stats = fs.statSync(options.uploadDir + '/' + name),
                         fileInfo;
@@ -267,7 +266,6 @@ var fetch = require('node-fetch');
                     if (stats.isFile() && name[0] !== '.') {
                         // 切掉檔案類型
                         manifest_pic_name = name.split('.')[0];
-                        // todo: API 可能要新增dataset的管理, 或是將dataset參數帶回上傳介面
                         // fetch to find mId
                         // @ref: https://stackoverflow.com/questions/24912226/how-to-make-ajax-request-through-nodejs-to-an-endpoint
                         let manifest_API = apiDomain + 'api/GET/manifest/check/' + manifest_pic_name;
@@ -277,6 +275,7 @@ var fetch = require('node-fetch');
                         })
                             .then(res => res.text())
                             .then(text => {
+                                console.log(text);
                                 // text is mId
                                 if (options.dataset) {
                                     fileInfo = new FileInfo({
@@ -303,12 +302,17 @@ var fetch = require('node-fetch');
                                 }
                             })
                     }
+                    // 當沒有半張圖只有資料夾時
+                    if (count_directory == list.length) {
+                        // 回傳空的files array
+                        handler.callback({files: files});
+                    }
                 } else {
-                    // console.log('else');
+                    // 當迴圈跑完or 目錄下完全是空的
+                    console.log('loop ends');
                 }
             });
-            // console.log(files);
-            // handler.callback({files: files});
+
         });
     };
     // 處理傳過來的檔案(post)
